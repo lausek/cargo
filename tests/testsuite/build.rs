@@ -1587,6 +1587,53 @@ package `test v0.0.0 ([CWD])`
 }
 
 #[cargo_test]
+fn self_dependency_avoided_by_feature() {
+    let p = project()
+        .file(
+            "Cargo.toml",
+            r#"
+                [package]
+
+                name = "parent"
+                version = "0.0.0"
+                authors = []
+
+                [lib]
+                name = "test"
+                path = "src/lib.rs"
+
+                [dependencies]
+                child = { path = "child", optional = true }
+
+                [features]
+                default = ["child"]
+            "#,
+        )
+        .file(
+            "child/Cargo.toml",
+            r#"
+                [package]
+
+                name = "child"
+                version = "0.0.0"
+                authors = []
+
+                [lib]
+                name = "child"
+                path = "src/lib.rs"
+
+                [dependencies]
+                parent = { path = "../", default-features = false }
+            "#,
+        )
+        .file("src/lib.rs", "")
+        .file("child/src/lib.rs", "")
+        .build();
+
+    p.cargo("build").run();
+}
+
+#[cargo_test]
 /// Make sure broken symlinks don't break the build
 ///
 /// This test requires you to be able to make symlinks.
